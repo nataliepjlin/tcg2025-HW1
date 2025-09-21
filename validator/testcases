@@ -1,0 +1,63 @@
+# +--------+
+# | Part 1 |
+# +--------+
+1-0
+8/8/8/7K b
+0
+
+1-1
+2c3n1/4R3/7p/1r4n1 b
+7
+
+1-2
+8/8/c7/1Kaaeerr b
+10
+
+1-3
+2D2p2/2DpDD2/1pD1Ap2/8 b
+13
+
+# +--------+
+# | Part 2 |
+# +--------+
+2-1
+2D2p2/2DpDDD1/1pD1Ap2/8 b
+15
+
+2-2
+1D3Dk1/DDkD2D1/3DD1D1/PD1kD3 b
+21
+
+2-3
+c2DD1e1/1K1DD3/2rDDK2/3DD1a1 b
+11
+
+# +--------+
+# | Part 3 |
+# +--------+
+3-1
+k3kDk1/DDkD2D1/3DD1D1/PD1k1k2 b
+25
+
+3-2
+2D2D2/aP1NpD2/2DDaD1n/K1D1a3 b
+15
+
+3-3
+D1N2paa/1D2KDDD/1nDD4/8 b
+17
+
+# +-----------+
+# | SuperHard |
+# +-----------+
+SH-1
+K1D2p2/1KDpDDD1/1pD1Ap2/8 b
+15
+
+SH-2
+DrprprDD/DDD1DDDD/2K1N3/8 b
+23
+
+SH-3
+2D1DD2/p1RN1Dn1/1D1aDD2/K1D1aP2 b
+16
