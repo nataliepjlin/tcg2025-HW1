@@ -77,7 +77,7 @@ int heuristic(const Position& pos) {
                 else{// used[best_attack] < min_step
                     int prev = used[best_attack];
                     used[best_attack] = min_step;
-                    min_step = -prev;
+                    min_step -= prev;
                 }
             }
             else{
