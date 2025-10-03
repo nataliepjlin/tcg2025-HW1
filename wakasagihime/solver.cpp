@@ -35,7 +35,58 @@ struct Node{
 };
 
 int heuristic(const Position& pos) {
-    return pos.count(Red);
+    int sum = 0;
+    Board red_board = pos.pieces(Red);// squares_sorted
+    Board black_board = pos.pieces(Black);
+    std::vector<int>used(SQUARE_NB, -1);
+    for(Square red_sq: BoardView(red_board)){
+        Piece target = pos.peek_piece_at(red_sq);
+        
+        int min_step = 1000;
+        int best_attack = -1;
+        for(Square black_sq: BoardView(black_board)){
+            Piece attacker = pos.peek_piece_at(black_sq);
+            if(attacker.type == Duck || !(attacker.type > target.type))
+                continue;
+
+            int cur_step = 1000;
+            if(attacker.type != Chariot)
+                cur_step = distance<Square>(black_sq, red_sq);
+            else{
+                // handle chariot
+                if(distance<Square>(black_sq, red_sq) == distance<Rank>(black_sq, red_sq)
+                || distance<Square>(black_sq, red_sq) == distance<File>(black_sq, red_sq))
+                    cur_step = 1;
+                else
+                    cur_step = 2;
+            }
+
+            if(min_step > cur_step){
+                min_step = cur_step;
+                best_attack = black_sq;
+            }
+        }
+        if(best_attack != -1){
+            if(used[best_attack] != -1){
+                if(used[best_attack] > min_step){// may be sequentially reached
+                    min_step = 0;
+                }
+                else if(used[best_attack] == min_step){
+                    min_step = 1;
+                }
+                else{// used[best_attack] < min_step
+                    int prev = used[best_attack];
+                    used[best_attack] = min_step;
+                    min_step = -prev;
+                }
+            }
+            else{
+                used[best_attack] = min_step;
+            }
+        }
+        sum += (min_step == 1000 ? 20 : min_step);
+    }
+    return sum;
 }
 std::string position_key(Position& pos){
     return pos.toFEN();
