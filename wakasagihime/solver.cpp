@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
 
 /*
  * Wakasagi will call this and only this function.
@@ -47,8 +48,8 @@ void resolve(Position &pos)
 
     if(pos.winner() == Black){ // already win
         auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-        info << duration.count() << "\n";
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        info << std::fixed << std::setprecision(3) << duration.count() / 1000.0 << "\n";
         info << "0\n";
         return;
     }
@@ -58,18 +59,16 @@ void resolve(Position &pos)
     Move m;
     Node start_node(pos, 0, heuristic(pos), -1, m);
     nodes.push_back(start_node);
-    // pq stores indices of nodes, sorted by nodes[index].f_cost
+    // for pq, Compare(a, b) returns true if a has lower priority than b
     auto cmp = [&nodes](int a, int b) {
         const Node &na = nodes[a];
         const Node &nb = nodes[b];
-        // Primary: lower f-cost first (min-heap behavior)
+        // primary: lower f-cost first
         if (na.f_cost != nb.f_cost)
             return na.f_cost > nb.f_cost;
-        // Secondary: fewer pieces left on the board first
-        if (na.h_cost != nb.h_cost)
-            return na.h_cost > nb.h_cost;
-        // Tertiary: original tie-breaker (prefer larger g on top with this comparator)
-        return na.g_cost < nb.g_cost;
+        // secondary: fewer pieces left on the board first
+        return na.h_cost > nb.h_cost;
+        // return na.g_cost < nb.g_cost;
     };
     std::priority_queue<int, std::vector<int>, decltype(cmp)> pq(cmp);
     pq.push(0);// push the index of the first node
@@ -79,13 +78,13 @@ void resolve(Position &pos)
         pq.pop();
 
         Node cur = nodes[cur_index];
-        // debug << "f_cost = " << cur.f_cost << ", g_cost = " << cur.g_cost << ", h_cost = " << cur.h_cost << "\n";
-        // debug << cur.position;
+        debug << "f_cost = " << cur.f_cost << ", g_cost = " << cur.g_cost << ", h_cost = " << cur.h_cost << "\n";
+        debug << cur.position;
 
         if(cur.position.winner() == Black){
             auto end_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-            info << duration.count() << "\n";
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+            info << std::fixed << std::setprecision(3) << duration.count() / 1000.0 << "\n";
             info << cur.f_cost << "\n";
             std::vector<Move>moves;
             while(cur_index != 0){
