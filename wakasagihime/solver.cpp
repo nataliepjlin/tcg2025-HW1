@@ -125,6 +125,14 @@ void resolve(Position &pos)
     pq.push(0);// push the index of the first node
 
     while(!pq.empty()){
+        // check time exceed 10s or not
+        auto current_time = std::chrono::high_resolution_clock::now();
+        auto time_span = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time);
+        if(time_span.count() > 10000){
+            info << -1;
+            return;
+        }
+
         int cur_index = pq.top();
         pq.pop();
 
