@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
-#include <cstring>
 
 /*
  * Wakasagi will call this and only this function.
@@ -22,7 +21,7 @@
  */
 
 struct Node{
-    Position position;
+    std::string pos_str;
     int g_cost;// actual cost from start to current state
     int h_cost;// heuristic cost to reach the goal
     int f_cost;// g + h, can be omitted actually (?)
@@ -31,16 +30,16 @@ struct Node{
     Move mv;// move from parent to current
 
     // initiate
-    Node(const Position &pos, int g, int h, int p, Move move)
-        : position(pos), g_cost(g), h_cost(h), f_cost(g+h), parent(p), mv(move){}
+    Node(const std::string &pos_key, int g, int h, int p, Move move)
+        : pos_str(pos_key), g_cost(g), h_cost(h), f_cost(g+h), parent(p), mv(move){}
 };
 
-int heuristic(Position& pos) {
+int heuristic(const Position& pos) {
     int sum = 0;
-    std::vector<Square>red_board = squares_sorted(pos, pos.pieces(Red));
+    Board red_board = pos.pieces(Red);// squares_sorted
     Board black_board = pos.pieces(Black);
     std::vector<int>used(SQUARE_NB, -1);
-    for(Square red_sq: red_board){
+    for(Square red_sq: BoardView(red_board)){
         Piece target = pos.peek_piece_at(red_sq);
         
         int min_step = 1000;
@@ -85,51 +84,12 @@ int heuristic(Position& pos) {
                 used[best_attack] = min_step;
             }
         }
-        sum += min_step;
+        sum += (min_step == 1000 ? 20 : min_step);
     }
     return sum;
 }
-
-// Compact board representation for memory efficiency
-struct CompactBoard {
-    uint8_t squares[32];
-    
-    CompactBoard() {
-        std::fill(std::begin(squares), std::end(squares), 0);
-    }
-    
-    CompactBoard(Position& pos) {
-        for (int sq = 0; sq < SQUARE_NB; sq++) {
-            Piece p = pos.peek_piece_at(static_cast<Square>(sq));
-            if (p.type == NO_PIECE) {
-                squares[sq] = 0;
-            } else {
-                // Encode: type (0-6) in lower 3 bits, color (0-1) in bit 3
-                // +1 to distinguish from empty (0)
-                squares[sq] = ((p.type & 0x7) | ((p.side & 0x1) << 3)) + 1;
-            }
-        }
-    }
-    
-    bool operator==(const CompactBoard& other) const {
-        return std::memcmp(squares, other.squares, 32) == 0;
-    }
-};
-
-// Custom hash function for CompactBoard
-struct CompactBoardHash {
-    size_t operator()(const CompactBoard& board) const {
-        size_t hash = 2166136261u;
-        for (int i = 0; i < 32; i++) {
-            hash ^= board.squares[i];
-            hash *= 16777619u;
-        }
-        return hash;
-    }
-};
-
-CompactBoard position_key(Position& pos){
-    return CompactBoard(pos);
+std::string position_key(Position& pos){
+    return pos.toFEN();
 }
 
 void resolve(Position &pos)
@@ -145,10 +105,10 @@ void resolve(Position &pos)
         return;
     }
     
-    std::unordered_map<CompactBoard, int, CompactBoardHash>visited;// key: pos_key, value: node index
+    std::unordered_map<std::string, int>visited;// key: pos_key, value: node index
     std::vector<Node>nodes;
     Move m;
-    Node start_node(pos, 0, 0, -1, m);
+    Node start_node(position_key(pos), 0, heuristic(pos), -1, m);
     nodes.push_back(start_node);
     // for pq, Compare(a, b) returns true if a has lower priority than b
     auto cmp = [&nodes](int a, int b) {
@@ -164,16 +124,17 @@ void resolve(Position &pos)
     std::priority_queue<int, std::vector<int>, decltype(cmp)> pq(cmp);
     pq.push(0);// push the index of the first node
 
-    int min_cost = 100000;
     while(!pq.empty()){
         int cur_index = pq.top();
         pq.pop();
 
         Node cur = nodes[cur_index];
+        Position cur_pos;
+        cur_pos.readFEN(cur.pos_str);
         debug << "f_cost = " << cur.f_cost << ", g_cost = " << cur.g_cost << ", h_cost = " << cur.h_cost << "\n";
-        debug << cur.position;
+        debug << cur_pos;
 
-        if(cur.position.winner() == Black){
+        if(cur_pos.winner() == Black){
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
             info << std::fixed << std::setprecision(3) << duration.count() / 1000.0 << "\n";
@@ -186,23 +147,18 @@ void resolve(Position &pos)
             for(int i = moves.size() - 1; i >= 0; i--){
                 info << moves[i];
             }
-            debug << nodes.size() << " nodes are generated\n";
             return;
         }
 
-        MoveList<> moves(cur.position);
+        MoveList<> moves(cur_pos);
         for(Move move: moves){
-            Position new_pos(cur.position);
+            Position new_pos(cur_pos);
             if(new_pos.do_move(move)){
-                CompactBoard new_pos_key = position_key(new_pos);
+                std::string new_pos_key = position_key(new_pos);
                 int new_g = cur.g_cost + 1;
+                int new_h = heuristic(new_pos);
                 if(visited.find(new_pos_key) == visited.end() || nodes[visited[new_pos_key]].g_cost > new_g){
-                    int new_h = heuristic(new_pos);
-                    if(new_g + new_h >= min_cost)
-                        continue;
-                    if(new_pos.winner() == Black && (new_g + new_h < min_cost))
-                        min_cost = new_g + new_h;
-                    Node new_node(new_pos, new_g, new_h, cur_index, move);
+                    Node new_node(new_pos_key, new_g, new_h, cur_index, move);
                     nodes.push_back(new_node);
                     int new_index = nodes.size() - 1;
                     visited[new_pos_key] = new_index;
