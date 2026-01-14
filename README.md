@@ -1,5 +1,5 @@
 ## About
-A Chinese Dark Chess puzzle solver using A* algorithm. Implementation explanations can be found at `TCG HW1.pdf`, while requirements are at `HW1.pdf`.
+A Chinese Dark Chess puzzle solver using A* algorithm. Implementation explanations can be found at `TCG-HW1-Report.pdf`, while requirements are at `HW1.pdf`.
 ## Usage
 Compile the solver by `make` in `wakasagihime/`, then run `./wakasagi` and feed the FEN string of the board to the solver. Sample inputs can be found at `validator/testcases`.
 ### Example 
